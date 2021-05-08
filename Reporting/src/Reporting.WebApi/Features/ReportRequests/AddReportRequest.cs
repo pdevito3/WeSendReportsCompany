@@ -13,6 +13,8 @@ namespace Reporting.WebApi.Features.ReportRequests
     using System.Threading;
     using System.Threading.Tasks;
     using System.Collections.Generic;
+    using MassTransit;
+    using Messages;
 
     public class AddReportRequest
     {
@@ -37,11 +39,13 @@ namespace Reporting.WebApi.Features.ReportRequests
         {
             private readonly ReportingDbContext _db;
             private readonly IMapper _mapper;
+            private readonly IPublishEndpoint _publishEndpoint;
 
-            public Handler(ReportingDbContext db, IMapper mapper)
+            public Handler(ReportingDbContext db, IMapper mapper, IPublishEndpoint publishEndpoint)
             {
                 _mapper = mapper;
                 _db = db;
+                _publishEndpoint = publishEndpoint;
             }
 
             public async Task<ReportRequestDto> Handle(AddReportRequestCommand request, CancellationToken cancellationToken)
@@ -51,12 +55,20 @@ namespace Reporting.WebApi.Features.ReportRequests
                     throw new ConflictException("ReportRequest already exists with this primary key.");
                 }
 
-                var reportRequest = _mapper.Map<ReportRequest> (request.ReportRequestToAdd);
+                var reportRequest = _mapper.Map<ReportRequest>(request.ReportRequestToAdd);
                 _db.ReportRequests.Add(reportRequest);
                 var saveSuccessful = await _db.SaveChangesAsync() > 0;
 
                 if (saveSuccessful)
                 {
+                    var message = new
+                    {
+                        ReportId = reportRequest.ReportRequestId,
+                        Provider = reportRequest.Provider.ToString(),
+                        Target = reportRequest.Target.ToString()
+                    };
+                    await _publishEndpoint.Publish<ISendReportRequest>(message);
+
                     return await _db.ReportRequests
                         .ProjectTo<ReportRequestDto>(_mapper.ConfigurationProvider)
                         .FirstOrDefaultAsync(r => r.ReportRequestId == reportRequest.ReportRequestId);

@@ -9,6 +9,9 @@ namespace Reporting.WebApi
     using Reporting.Infrastructure.Contexts;
     using Reporting.WebApi.Extensions;
     using Serilog;
+    using MassTransit;
+    using Messages;
+    using RabbitMQ.Client;
 
     public class StartupDevelopment
     {
@@ -27,6 +30,27 @@ namespace Reporting.WebApi
         {
             services.AddCorsService("ReportingCorsPolicy");
             services.AddInfrastructure(_config, _env);
+
+            services.AddMassTransit(mt =>
+            {
+                mt.UsingRabbitMq((context, cfg) =>
+                {
+                    cfg.Host("localhost", "/", h =>
+                    {
+                        h.Username("guest");
+                        h.Password("guest");
+                    });
+
+                    cfg.Message<ISendReportRequest>(e => e.SetEntityName("report-requests")); // name of the primary exchange
+                    cfg.Publish<ISendReportRequest>(e => e.ExchangeType = ExchangeType.Direct); // primary exchange type
+                    cfg.Send<ISendReportRequest>(e =>
+                    {
+                        e.UseRoutingKeyFormatter(context => context.Message.Provider.ToString()); // route by provider (email or fax)
+                    });
+                });
+            });
+            services.AddMassTransitHostedService();
+
             services.AddControllers()
                 .AddNewtonsoftJson();
             services.AddApiVersioningExtension();
@@ -46,14 +70,13 @@ namespace Reporting.WebApi
 
             // Entity Context - Do Not Delete
 
-                using (var context = app.ApplicationServices.GetService<ReportingDbContext>())
-                {
-                    context.Database.EnsureCreated();
+            using (var context = app.ApplicationServices.GetService<ReportingDbContext>())
+            {
+                context.Database.EnsureCreated();
 
-                    // ReportingDbContext Seeders
-                    ReportRequestSeeder.SeedSampleReportRequestData(app.ApplicationServices.GetService<ReportingDbContext>());
-                }
-
+                // ReportingDbContext Seeders
+                ReportRequestSeeder.SeedSampleReportRequestData(app.ApplicationServices.GetService<ReportingDbContext>());
+            }
 
             app.UseCors("ReportingCorsPolicy");
 
