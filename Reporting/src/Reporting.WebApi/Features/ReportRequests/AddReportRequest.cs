@@ -64,8 +64,9 @@ namespace Reporting.WebApi.Features.ReportRequests
                     var message = new
                     {
                         ReportId = reportRequest.ReportRequestId,
-                        Provider = reportRequest.Provider.ToString(),
-                        Target = reportRequest.Target.ToString()
+                        reportRequest.Provider,
+                        reportRequest.Target,
+                        reportRequest.IsPublic
                     };
                     await _publishEndpoint.Publish<ISendReportRequest>(message);
 

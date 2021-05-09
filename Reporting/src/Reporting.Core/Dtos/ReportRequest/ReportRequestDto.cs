@@ -4,11 +4,14 @@ namespace Reporting.Core.Dtos.ReportRequest
     using System.ComponentModel.DataAnnotations;
     using System.ComponentModel.DataAnnotations.Schema;
 
-    public class ReportRequestDto 
+    public class ReportRequestDto
     {
         public Guid ReportRequestId { get; set; }
-        public string Provider { get; set; }        public string Target { get; set; }
+        public string Provider { get; set; }
+        public string Target { get; set; }
 
         // add-on property marker - Do Not Delete This Comment
+
+        public bool IsPublic { get; set; }
     }
 }

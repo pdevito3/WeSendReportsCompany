@@ -20,5 +20,7 @@ namespace Reporting.Core.Entities
         public string Target { get; set; }
 
         // add-on property marker - Do Not Delete This Comment
+
+        public bool IsPublic { get; set; }
     }
 }

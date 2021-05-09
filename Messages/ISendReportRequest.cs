@@ -9,7 +9,8 @@
     public interface ISendReportRequest
     {
         Guid ReportId { get; set; }
-        string Provider { get; set; } // "email" or "fax"
+        string Provider { get; set; } // "email" or "fax" or "cloud"
         string Target { get; set; }
+        public bool IsPublic { get; set; }
     }
 }

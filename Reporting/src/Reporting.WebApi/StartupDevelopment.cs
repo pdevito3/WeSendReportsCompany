@@ -41,11 +41,15 @@ namespace Reporting.WebApi
                         h.Password("guest");
                     });
 
-                    cfg.Message<ISendReportRequest>(e => e.SetEntityName("report-requests")); // name of the primary exchange
-                    cfg.Publish<ISendReportRequest>(e => e.ExchangeType = ExchangeType.Direct); // primary exchange type
+                    cfg.Message<ISendReportRequest>(e => e.SetEntityName("send-report")); // name of the primary exchange
+                    cfg.Publish<ISendReportRequest>(e => e.ExchangeType = ExchangeType.Topic); // primary exchange type
                     cfg.Send<ISendReportRequest>(e =>
                     {
-                        e.UseRoutingKeyFormatter(context => context.Message.Provider.ToString()); // route by provider (email or fax)
+                        e.UseRoutingKeyFormatter(context =>
+                        {
+                            var sharedState = context.Message.IsPublic ? "public" : "private";
+                            return $"{sharedState}.{context.Message.Provider}";
+                        });
                     });
                 });
             });

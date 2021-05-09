@@ -30,24 +30,25 @@ namespace ReportSendingConsumerService
                                 h.Password("guest");
                             });
 
-                            cfg.ReceiveEndpoint("email-reports", re =>
+                            cfg.ReceiveEndpoint("private-reports", re =>
                             {
                                 re.ConfigureConsumeTopology = false;
                                 re.Consumer<EmailConsumer>();
-                                re.Bind("report-requests", e =>
+                                re.Consumer<FaxConsumer>();
+                                re.Bind("send-report", e =>
                                 {
-                                    e.RoutingKey = "email";
-                                    e.ExchangeType = ExchangeType.Direct;
+                                    e.RoutingKey = "private.*";
+                                    e.ExchangeType = ExchangeType.Topic;
                                 });
                             });
-                            cfg.ReceiveEndpoint("fax-reports", re =>
+                            cfg.ReceiveEndpoint("public-reports", re =>
                             {
                                 re.ConfigureConsumeTopology = false;
-                                re.Consumer<FaxConsumer>();
-                                re.Bind("report-requests", e =>
+                                re.Consumer<CloudConsumer>();
+                                re.Bind("send-report", e =>
                                 {
-                                    e.RoutingKey = "fax";
-                                    e.ExchangeType = ExchangeType.Direct;
+                                    e.RoutingKey = "public.*";
+                                    e.ExchangeType = ExchangeType.Topic;
                                 });
                             });
                         });
